@@ -21,7 +21,9 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
-
+@app.get("/")  # ✅ Add this route
+def read_root():
+    return {"message": "Backend is running!"}
 # ✅ API Route to Generate Captions
 @app.post("/generate_caption/")
 async def generate_caption(file: UploadFile = File(...)):  # Corrected
