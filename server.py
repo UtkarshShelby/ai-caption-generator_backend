@@ -23,9 +23,9 @@ processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
 
 # ✅ API Route to Generate Captions
-@app.post("/generate_caption", include_in_schema=False)
+@app.post("/generate_caption/")
+async def generate_caption(file: UploadFile = File(...)):  # Corrected
 
-async def generate_caption(file: UploadFile = File(...)):
     try:
         # Read image file
         image_data = await file.read()
