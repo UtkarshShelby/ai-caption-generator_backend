@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
+import torch
 import io
 
 app = FastAPI()
@@ -9,18 +10,21 @@ app = FastAPI()
 # ✅ Enable CORS so frontend can communicate with backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows requests from any frontend
+    allow_origins=["*"],  # Change to specific domain in production for security
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ Load BLIP-2 Model and Processor
+# ✅ Load BLIP-2 Model and Processor (Check if CUDA is available)
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
 
 # ✅ API Route to Generate Captions
-@app.post("/generate_caption")
+@app.post("/generate_caption", include_in_schema=False)
+
 async def generate_caption(file: UploadFile = File(...)):
     try:
         # Read image file
@@ -28,7 +32,7 @@ async def generate_caption(file: UploadFile = File(...)):
         image = Image.open(io.BytesIO(image_data)).convert("RGB")
 
         # Process image and generate caption
-        inputs = processor(image, return_tensors="pt")
+        inputs = processor(image, return_tensors="pt").to(device)  # Ensure processing happens on GPU if available
         caption_ids = model.generate(**inputs)
         caption = processor.batch_decode(caption_ids, skip_special_tokens=True)[0]
 
